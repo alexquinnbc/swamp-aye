@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Swamp's Betrayal</title>
+    <style>
+        /* Maximalist Styling */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Cinzel', serif;
+        }
+
+        body {
+            background: linear-gradient(to bottom, #0a1f22, #1a3c34);
+            color: background-color: #fff;
+            overflow-x: hidden;
+            cursor: pointer;
+            min-height: 2000px; /* Tall page for scrolling */
+        }
+
+        #story {
+            position: relative;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 40px;
+            z-index: 10;
+        }
+
+        .section {
+            opacity: 0;
+            transform: translateY(50px);
+            transition: opacity 0.5s ease, transform 0.5s ease;
+            margin-bottom: 100px;
+        }
+
+        .section.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        h1 {
+            font-size: 48px;
+            color: #ff0000; /* MAGA red */
+            text-shadow: 0 0px 10px rgba(255, 0, 0, 0.5);
+            text-align: center;
+        }
+
+        h2 {
+            font-size: 24px;
+            color: #00cc00; /* Swamp green */
+        }
+
+        p {
+            font-size: 16px;
+            line-height: 1.6;
+            margin: #333;
+            color: rgba(255, 255, 255, 0.8);
+        }
+
+        .zoomable {
+            cursor: pointer;
+            transition: color 0.3s;
+        }
+
+        .zoomable:hover {
+            color: #00ffcc;
+            text-decoration: underline;
+        }
+
+        .margin-note {
+            position: absolute;
+            width: 200px;
+            color: #00ffcc;
+            font-size: 12px;
+            opacity: 0.7;
+            transition: opacity 0.3s;
+        }
+
+        .margin-note:hover {
+            opacity: 1;
+        }
+
+        #timelineCanvas, #victimCanvas {
+            display: block;
+            margin: 20px auto;
+            border: 2px solid #00ff00;
+            background: #1a3c34;
+        }
+
+        /* Generative swamp mist */
+        @keyframes mist {
+            0% { background-position: 0 0; }
+            100% { background-position: 100% 100%; }
+        }
+
+        #mist {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: url('https://via.placeholder.com/2000x2000?text=Swamp+Mist') repeat;
+            opacity: 0.2;
+            animation: mist 60s linear infinite;
+            z-index: 1;
+        }
+
+        /* Perspective toggle buttons */
+        .perspective-toggle {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 100;
+        }
+
+        .perspective-toggle button {
+            margin: 5px;
+            padding: 10px;
+            background: #ff0000;
+            color: #fff;
+            border: none;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+
+        .perspective-toggle button:hover {
+            background: #00cc00;
+        }
+    </style>
+</head>
+<body>
+    <div id="mist"></div>
+    <div class="perspective-toggle">
+        <button onclick="setPerspective('maga')">MAGA View</button>
+        <button onclick="setPerspective('victim')">Victim View</button>
+        <button onclick="setPerspective('investigator')">Investigator View</button>
+    </div>
+    <div id="story">
+        <div class="section" id="intro">
+            <h1>The Swamp's Betrayal</h1>
+            <p>Elon Musk, the billionaire visionary, promised to <span class="zoomable" data-story="DOGE was Musk’s brainchild to slash government waste, but it became a tool for personal gain.">DOGE</span> the swamp. But in 130 days, he became its creature. Scroll to uncover the betrayal.</p>
+        </div>
+        <div class="section" id="promise">
+            <h2>The Promise</h2>
+            <p>Musk vowed to gut the <span class="zoomable" data-story="The Deep State: unelected bureaucrats MAGA despised, but Musk’s cuts targeted honest workers too.">Deep State</span>, firing lazy bureaucrats and saving billions. MAGA cheered on X: “Elon’s our hero!”</p>
+            <canvas id="timelineCanvas" width="800" height="400"></canvas>
+        </div>
+        <div class="section" id="betrayal">
+            <h2>The Betrayal</h2>
+            <p>Day by day, Musk’s crusade turned corrupt. <span class="zoomable" data-story="Starlink’s $2.4B FAA contract was a favor to Musk, sidelining Verizon’s rural broadband.">Starlink contracts</span>, regulator purges, and Tesla deals exposed his self-interest.</p>
+            <div id="microgame">
+                <p>Play to uncover Musk’s data access: Click the boxes to decrypt.</p>
+                <div id="gameGrid" style="display: grid; grid-template-columns: repeat(3, 50px); gap: 5px;"></div>
+            </div>
+        </div>
+        <div class="section" id="victims">
+            <h2>The Victims</h2>
+            <p>Innocents paid the price: <span class="zoomable" data-story="Maria Sanchez, IRS auditor, lost her job and home after Musk’s cuts. ‘My kids go hungry,’ she posted on X.">IRS workers</span>, FDA scientists, and more. Hover to see their stories.</p>
+            <canvas id="victimCanvas" width="400" height="400"></canvas>
+        </div>
+        <div class="section" id="system">
+            <h2>The System</h2>
+            <p>Washington’s rot enabled Musk. Weak ethics laws and a polarized public let <span class="zoomable" data-story="Dr. James Patel, FDA scientist, was fired for Neuralink concerns. ‘Patients deserve better,’ he tweeted.">corruption</span> fester. Reform is urgent.</p>
+        </div>
+    </div>
+
+    <script>
+        // Temporal Scroll-Jacking
+        let lastScrollY = 0;
+        window.addEventListener('scroll', () => {
+            const sections = document.querySelectorAll('.section');
+            sections.forEach(section => {
+                const rect = section.getBoundingClientRect();
+                if (rect.top < window.innerHeight * 0.8 && rect.bottom > 0) {
+                    section.classList.add('visible');
+                }
+            });
+
+            // Emotional UI: Adjust palette based on scroll speed
+            const scrollSpeed = Math.abs(window.scrollY - lastScrollY);
+            document.body.style.background = scrollSpeed > 10 ?
+                'linear-gradient(to bottom, #0a1f22, #1a3c34)' :
+                'linear-gradient(to bottom, #1a3c34, #0a1f22)';
+            lastScrollY = window.scrollY;
+        });
+
+        // Perspective Toggle
+        let currentPerspective = 'maga';
+        function setPerspective(perspective) {
+            currentPerspective = perspective;
+            const paragraphs = document.querySelectorAll('p');
+            paragraphs.forEach(p => {
+                if (perspective === 'maga') {
+                    p.style.color = 'rgba(255, 255, 255, 0.8)';
+                    p.innerHTML = p.innerHTML.replace('betrayal', 'heroic fight');
+                } else if (perspective === 'victim') {
+                    p.style.color = '#00ccff';
+                    p.innerHTML = p.innerHTML.replace('heroic fight', 'devastating betrayal');
+                } else {
+                    p.style.color = '#cccccc';
+                    p.innerHTML = p.innerHTML.replace('devastating betrayal', 'systemic corruption');
+                }
+            });
+        }
+
+        // Semantic Zooming
+        const zoomables = document.querySelectorAll('.zoomable');
+        zoomables.forEach(zoomable => {
+            zoomable.addEventListener('click', () => {
+                alert(zoomable.dataset.story);
+            });
+        });
+
+        // Living Margins
+        function addMarginNote(section, text, side = 'left') {
+            const note = document.createElement('div');
+            note.className = 'margin-note';
+            note.textContent = text;
+            note.style[side] = '-220px';
+            note.style.top = `${section.offsetTop + 50}px`;
+            document.getElementById('story').appendChild(note);
+        }
+        addMarginNote(document.getElementById('promise'), 'X post: “Elon will save us!”', 'left');
+        addMarginNote(document.getElementById('victims'), 'X post: “Maria Sanchez: My kids go hungry.”', 'right');
+
+        // Timeline Chart
+        const timelineCanvas = document.getElementById('timelineCanvas');
+        const tCtx = timelineCanvas.getContext('2d');
+        const nodes = [
+            { day: 1, x: 50, y: 100, label: 'DOGE Formed', color: '#FF0000' },
+            { day: 8, x: 150, y: 150, label: 'Wilcox Fired', color: '#0000FF' },
+            { day: 39, x: 350, y: 200, label: 'Starlink Contract', color: '#00FF00' },
+            { day: 69, x: 550, y: 100, label: 'Musk Ousted', color: '#FF0000' }
+        ];
+        tCtx.fillStyle = '#1A3C34';
+        tCtx.fillRect(0, 0, timelineCanvas.width, timelineCanvas.height);
+        tCtx.strokeStyle = '#00FF00';
+        tCtx.lineWidth = 2;
+        tCtx.beginPath();
+        nodes.forEach((node, i) => {
+            if (i > 0) {
+                tCtx.moveTo(nodes[i-1].x, nodes[i-1].y);
+                tCtx.lineTo(node.x, node.y);
+            }
+        });
+        tCtx.stroke();
+        nodes.forEach(node => {
+            tCtx.fillStyle = node.color;
+            tCtx.beginPath();
+            tCtx.arc(node.x, node.y, 10, 0, 2 * Math.PI);
+            tCtx.fill();
+            tCtx.fillStyle = '#FFFFFF';
+            tCtx.font = '12px Arial';
+            tCtx.fillText(node.label, node.x + 15, node.y);
+        });
+        timelineCanvas.addEventListener('click', (e) => {
+            const rect = timelineCanvas.getBoundingClientRect();
+            const mouseX = e.clientX - rect.left;
+            const mouseY = e.clientY - rect.top;
+            nodes.forEach(node => {
+                if (Math.hypot(mouseX - node.x, mouseY - node.y) < 10) {
+                    alert(`Day ${node.day}: ${node.label}`);
+                }
+            });
+        });
+
+        // Victim Infographic
+        const victimCanvas = document.getElementById('victimCanvas');
+        const vCtx = victimCanvas.getContext('2d');
+        const victims = [
+            { group: 'Inspectors General', count: 17, story: 'Fired for oversight, left jobless.' },
+            { group: 'IRS Workers', count: 2000, story: 'Maria Sanchez: Lost job, home.' },
+            { group: 'Gwen Wilcox', count: 1, story: 'Targeted for SpaceX probe.' },
+            { group: 'FDA Scientists', count: 50, story: 'Dr. Patel: Fired for Neuralink.' }
+        ];
+        const centerX = victimCanvas.width / 2;
+        const centerY = victimCanvas.height / 2;
+        const radius = 150;
+        vCtx.fillStyle = '#1A3C34';
+        vCtx.fillRect(0, 0, victimCanvas.width, victimCanvas.height);
+        victims.forEach((victim, i) => {
+            const angle = (i / victims.length) * 2 * Math.PI;
+            vCtx.fillStyle = '#FF0000';
+            vCtx.beginPath();
+            vCtx.moveTo(centerX, centerY);
+            vCtx.arc(centerX, centerY, radius, angle, angle + (2 * Math.PI / victims.length));
+            vCtx.fill();
+            vCtx.fillStyle = '#FFFFFF';
+            vCtx.font = '12px Arial';
+            vCtx.fillText(victim.group, centerX + Math.cos(angle) * (radius + 20), centerY + Math.sin(angle) * (radius + 20));
+        });
+        victimCanvas.addEventListener('mousemove', (e) => {
+            const rect = victimCanvas.getBoundingClientRect();
+            const mouseX = e.clientX - rect.left - centerX;
+            const mouseY = e.clientY - rect.top - centerY;
+            const angle = Math.atan2(mouseY, mouseX) < 0 ? Math.atan2(mouseY, mouseX) + 2 * Math.PI : Math.atan2(mouseY, mouseX);
+            const index = Math.floor((angle / (2 * Math.PI)) * victims.length);
+            if (Math.hypot(mouseX, mouseY) < radius) {
+                alert(victims[index].story);
+            }
+        });
+
+        // Microgame: Decrypt Data
+        const gameGrid = document.getElementById('gameGrid');
+        for (let i = 0; i < 9; i++) {
+            const box = document.createElement('div');
+            box.style.width = '50px';
+            box.style.height = '50px';
+            box.style.background = '#333';
+            box.style.cursor = 'pointer';
+            box.addEventListener('click', () => {
+                box.style.background = '#00ff00';
+                if (Array.from(gameGrid.children).every(b => b.style.background === 'rgb(0, 255, 0)')) {
+                    alert('Data decrypted: Musk accessed secret labor violation data!');
+                }
+            });
+            gameGrid.appendChild(box);
+        }
+    </script>
+</body>
+</html>
